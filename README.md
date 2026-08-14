@@ -1,3 +1,3 @@
-# llm-demos
+# 1 shot demos
 
-1 shot demos by different llm models
+1 shot demos designed and created by different local running llm models
