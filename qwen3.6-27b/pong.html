@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pong</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas {
+      border: 2px solid #fff;
+      background: #111;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="800" height="500"></canvas>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Paddle config
+    const PADDLE_W = 12;
+    const PADDLE_H = 80;
+    const PADDLE_SPEED = 6;
+
+    // Ball config
+    const BALL_SIZE = 10;
+    const BALL_SPEED = 5;
+
+    // Game state
+    let leftScore = 0;
+    let rightScore = 0;
+
+    const leftPaddle = { x: 20, y: H / 2 - PADDLE_H / 2, w: PADDLE_W, h: PADDLE_H };
+    const rightPaddle = { x: W - 20 - PADDLE_W, y: H / 2 - PADDLE_H / 2, w: PADDLE_W, h: PADDLE_H };
+
+    const ball = {
+      x: W / 2,
+      y: H / 2,
+      vx: BALL_SPEED,
+      vy: BALL_SPEED
+    };
+
+    // Input
+    const keys = {};
+    window.addEventListener('keydown', e => { keys[e.key] = true; });
+    window.addEventListener('keyup', e => { keys[e.key] = false; });
+
+    function resetBall(direction) {
+      ball.x = W / 2;
+      ball.y = H / 2;
+      ball.vx = BALL_SPEED * direction;
+      ball.vy = BALL_SPEED * (Math.random() * 2 - 1);
+    }
+
+    function update() {
+      // Left paddle (W/S)
+      if (keys['w'] || keys['W']) leftPaddle.y -= PADDLE_SPEED;
+      if (keys['s'] || keys['S']) leftPaddle.y += PADDLE_SPEED;
+
+      // Right paddle (Up/Down)
+      if (keys['ArrowUp']) rightPaddle.y -= PADDLE_SPEED;
+      if (keys['ArrowDown']) rightPaddle.y += PADDLE_SPEED;
+
+      // Clamp paddles
+      leftPaddle.y = Math.max(0, Math.min(H - PADDLE_H, leftPaddle.y));
+      rightPaddle.y = Math.max(0, Math.min(H - PADDLE_H, rightPaddle.y));
+
+      // Move ball
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+
+      // Top/bottom bounce
+      if (ball.y <= 0 || ball.y >= H - BALL_SIZE) {
+        ball.vy *= -1;
+        ball.y = ball.y <= 0 ? 0 : H - BALL_SIZE;
+      }
+
+      // Paddle collision
+      if (
+        ball.x >= leftPaddle.x &&
+        ball.x <= leftPaddle.x + leftPaddle.w &&
+        ball.y >= leftPaddle.y &&
+        ball.y <= leftPaddle.y + leftPaddle.h
+      ) {
+        ball.vx = Math.abs(ball.vx);
+        ball.vy += (ball.y - (leftPaddle.y + leftPaddle.h / 2)) * 0.1;
+        ball.x = leftPaddle.x + leftPaddle.w;
+      }
+
+      if (
+        ball.x <= rightPaddle.x + rightPaddle.w &&
+        ball.x >= rightPaddle.x &&
+        ball.y >= rightPaddle.y &&
+        ball.y <= rightPaddle.y + rightPaddle.h
+      ) {
+        ball.vx = -Math.abs(ball.vx);
+        ball.vy += (ball.y - (rightPaddle.y + rightPaddle.h / 2)) * 0.1;
+        ball.x = rightPaddle.x;
+      }
+
+      // Score
+      if (ball.x < 0) {
+        rightScore++;
+        resetBall(1);
+      }
+      if (ball.x > W) {
+        leftScore++;
+        resetBall(-1);
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Center line
+      ctx.setLineDash([10, 10]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath();
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W / 2, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Score
+      ctx.fillStyle = '#fff';
+      ctx.font = '48px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(leftScore, W / 4, 60);
+      ctx.fillText(rightScore, (3 * W) / 4, 60);
+
+      // Paddles
+      ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h);
+      ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h);
+
+      // Ball
+      ctx.fillRect(ball.x, ball.y, BALL_SIZE, BALL_SIZE);
+
+      // Controls hint
+      ctx.font = '14px monospace';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillText('W/S — Left  |  ↑/↓ — Right', W / 2, H - 15);
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
